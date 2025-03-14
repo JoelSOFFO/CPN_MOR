@@ -10,6 +10,10 @@ from argparse import ArgumentParser
 from visualization.tree_viz import tree_visualization
 
 
+def relative_error(S, S_approx):
+    return np.linalg.norm(S - S_approx, 'fro') / np.linalg.norm(S, 'fro')
+
+
 def error_svd(singular_values):
     error = np.sqrt(np.flip(np.cumsum(np.flip(singular_values ** 2)) / (singular_values ** 2).sum()))
     return error
@@ -27,7 +31,7 @@ def run():
         U, Sigma, _ = np.linalg.svd(S - Sref, full_matrices=False)
         plt.semilogy(range(1, len(error_svd(Sigma))), error_svd(Sigma)[1:], marker='o')
         plt.grid()
-        plt.savefig(results_path+"/singular_value_decay.png")
+        plt.savefig(results_path + "/singular_value_decay.png")
     np.save(results_path + "/left_rob.npy", U)
     print("SVD truncation...")
 
@@ -43,7 +47,7 @@ def run():
     tol_min = config["add_params"]["tol_min"]
 
     Qr, func, index_r, lipschitz_consts = method.find_n(Vstar, Qstar, p1=p1, tol_min=tol_min,
-                                      train_set=train_set, Gamma=Gamma)
+                                                        train_set=train_set, Gamma=Gamma)
 
     np.save(results_path + "/Qr.npy", Qr)
     np.save(results_path + "/Vstar.npy", Vstar)
@@ -77,11 +81,11 @@ def run():
 
     print("time = ", t2 - t1, " secs")
     print("Decoder lipschitz const = ", np.sqrt(1 + sum(np.array(lipschitz_consts) ** 2)))
-    print("Linear reconstruction error training = ", relative_error(S, S_lin))
-    print("Linear reconstruction error test = ", relative_error(S_test, S_lin_test))
-    print("Nonlinear reconstruction error training = ", relative_error(S, S_approx))
-    print("Test reconstruction error = ", relative_error(S_test, S_approx_test))
-    print("Test reconstruction error online = ", relative_error(S_test, S_approx_test_online))
+    print("Linear reconstruction training error = ", relative_error(S, S_lin))
+    print("Linear reconstruction test error = ", relative_error(S_test, S_lin_test))
+    print("Nonlinear reconstruction training error = ", relative_error(S, S_approx))
+    print("Nonlinear reconstruction test error = ", relative_error(S_test, S_approx_test))
+    #print("Test reconstruction error online = ", relative_error(S_test, S_approx_test_online))
     tree_visualization(config)
 
     with open(Path(folder, "train_info.txt"), "w") as f:
@@ -112,8 +116,6 @@ def test():
     folder = Path(results_path)
     if folder.exists():
         Vstar = np.load(results_path + "/Vstar.npy")
-        # Qstar = np.load(results_path + "/Qstar.npy")
-        # Qr = np.load(results_path + "/Qr.npy")
         func = np.load(results_path + "/function.npy", allow_pickle=True).item()
         index_r = np.load(results_path + "/index_r.npy")
 
@@ -138,11 +140,11 @@ def test():
         S_approx_test = Sref_test + V @ Qr_test + Vbar @ Qbar_test
         S_approx_test_online = Sref_test + V @ Qr_pred_test + Vbar @ Qbar_online_test
 
-        print("Linear reconstruction error training = ", relative_error(S, S_lin))
-        print("Linear reconstruction error test = ", relative_error(S_test, S_lin_test))
-        print("Nonlinear reconstruction error training = ", relative_error(S, S_approx))
-        print("Test reconstruction error = ", relative_error(S_test, S_approx_test))
-        print("Test reconstruction error online = ", relative_error(S_test, S_approx_test_online))
+        print("Linear reconstruction training error = ", relative_error(S, S_lin))
+        print("Linear reconstruction training error = ", relative_error(S_test, S_lin_test))
+        print("Nonlinear reconstruction training error = ", relative_error(S, S_approx))
+        print("Nonlinear reconstruction test error = ", relative_error(S_test, S_approx_test))
+        #print("Test reconstruction error online = ", relative_error(S_test, S_approx_test_online))
     else:
         raise ValueError("Results have not been saved yet...Train the model first ! ")
 

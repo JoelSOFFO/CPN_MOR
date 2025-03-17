@@ -11,8 +11,8 @@ def relative_error(S, S_approx):
     return np.linalg.norm(S - S_approx, ord='fro') / np.linalg.norm(S, ord='fro')
 
 
-def sparse_solver(s, input_data, output_data, A, H, ls, basisAdaptation=False):
-    f = s.leastSquares(input_data, output_data, A, H, ls, basisAdaptation=basisAdaptation)
+def sparse_solver(s, input_data, output_data, A, H, ls):
+    f = s.leastSquares(input_data, output_data, A, H, ls)
 
     return f
 
@@ -65,7 +65,8 @@ def run(config):
     I = tensap.MultiIndices.hyperbolic_cross_set(d, p)
 
     s = solve_ls(dim=d, I=I, maxIndex=p)
-    A, H = s.eval_H_and_A(An.T, BASES)
+    H = tensap.SparseTensorProductFunctionalBasis(BASES, I)
+    A = H.eval(An.T)
     Abar = Vbar.T @ (S - Sref)
     f = Parallel(n_jobs=-1)(
         delayed(sparse_solver)(s, An.T, Abar.T[:, i], A, H, ls) for i in range(Abar.T.shape[1]))

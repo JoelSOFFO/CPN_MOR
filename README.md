@@ -14,6 +14,12 @@ To use the code :
   
 - Install the package tensap, see https://github.com/anthony-nouy/tensap
 
+- Install the required libraries
+
+  ```
+  pip install -r requirements.txt
+  ```
+  
 - Data format: data is given as a numpy array of shape (D, m), whoses columns represent m samples in R^D.
     It is given in a npy file whose path is given in config files (cpn.yaml and sota.yaml).
   

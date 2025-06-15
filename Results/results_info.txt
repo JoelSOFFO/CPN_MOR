@@ -1,0 +1,8 @@
+  * Time          = 1.0723229169998376
+  * n          = 2
+  * I          = [0, 1]
+  * Linear reconstruction error training          = 0.3015113445777637
+  * Linear reconstruction error test          = 0.3015113445777637
+  * Nonlinear reconstruction error training          = 1.2559154023249213e-16
+  * Test reconstruction error          = 1.2559154023249213e-16
+  * Decoder lipschitz constant          = 1.4752538421843022

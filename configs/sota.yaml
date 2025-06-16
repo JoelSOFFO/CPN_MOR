@@ -7,8 +7,8 @@ data:
 params:
   method : "linear" # linear, quadratic, additive_am, sparse or low_rank
   p : 5 # polynomial degree
-  N : 43 # dimension of the background space, not used if method  : "linear" or "quadratic"
-  n : 5 # dimension of the approximate manifold
+  N : 3 # dimension of the background space, not used if method  : "linear" or "quadratic"
+  n : 1 # dimension of the approximate manifold
 
 add_params:
   compute_svd : True # If False, use precomputed basis of X_N stored in a npy file whose path is given by path_svd

@@ -1,6 +1,7 @@
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
+import pickle
 
 import sys
 
@@ -10,8 +11,13 @@ from utils import *
 plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 def tree_visualization(config):
+
     path_results = config["path_results"]
-    func = np.load(path_results + "/function.npy", allow_pickle=True).item()
+
+    with open(path_results + "/Decoder.pkl", "rb") as f:
+        D = pickle.load(f)
+
+    func = D.functions_f
     index_learnt = np.array([ind["index"] for ind in func.values()])
 
     indices_to_plot = [x-1 for x in config["plot"]["indices_to_plot"]]

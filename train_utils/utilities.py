@@ -97,7 +97,7 @@ class utils(object):
         gamma = np.sqrt(self.weights(index, indices_list, learnt_weights) * (Gamma ** 2 - 1))
         return gamma
 
-    def n_min(self, U, Q, tol_min):
+    def find_n_min(self, U, Q, tol_min):
         n = 1
         S_approx = self.Sref + U[:, :n] @ Q[:n, :]
         err = tol_min * np.linalg.norm(self.S, 'fro')
@@ -105,14 +105,3 @@ class utils(object):
             n += 1
             S_approx = self.Sref + U[:, :n] @ Q[:n, :]
         return n
-
-    def coeff_approximation(self, Q, func, index_r):
-        Qbar = np.zeros((len(func.items()), Q.shape[1]))
-        list_keys = list(func.keys())
-        Q_total = np.zeros((len(index_r) + len(func.items()), Q.shape[1]))
-        Q_total[index_r, :] = Q
-        for i, coef_name in enumerate(list_keys):
-            nb_deps = func[coef_name]['nb_deps']
-            Qbar[i, :] = func[coef_name]['function'](Q_total.T[:, :nb_deps])
-            Q_total[func[coef_name]['index']] = Qbar[i, :]
-        return Qbar

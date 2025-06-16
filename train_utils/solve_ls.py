@@ -1,6 +1,5 @@
 import tensap
 
-
 class solve_ls:
     def __init__(self, dim=1, I=None, maxIndex=1):
         self.p = maxIndex

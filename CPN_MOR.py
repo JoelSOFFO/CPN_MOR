@@ -8,11 +8,11 @@ from timeit import default_timer
 import yaml
 from argparse import ArgumentParser
 from visualization.tree_viz import tree_visualization
-
+from encoder_decoder import Encoder, Decoder
+import pickle
 
 def relative_error(S, S_approx):
     return np.linalg.norm(S - S_approx, 'fro') / np.linalg.norm(S, 'fro')
-
 
 def error_svd(singular_values):
     error = np.sqrt(np.flip(np.cumsum(np.flip(singular_values ** 2)) / (singular_values ** 2).sum()))
@@ -32,34 +32,40 @@ def run():
         plt.semilogy(range(1, len(error_svd(Sigma))), error_svd(Sigma)[1:], marker='o')
         plt.grid()
         plt.savefig(results_path + "/singular_value_decay.png")
-    np.save(results_path + "/left_rob.npy", U)
+    np.save(results_path + "/singular_vectors.npy", U)
     print("SVD truncation...")
 
     Vstar, Qstar = method.truncate_svd(U[:, ])
 
-    print("Vstar shape= ", Vstar.shape)
-    print("Qstar shape= ", Qstar.shape)
+    print("V_N shape= ", Vstar.shape)
+    print("A_N shape= ", Qstar.shape)
 
     t1 = default_timer()
 
     Gamma = config["add_params"]["L"]
     train_set = config["params"]["train_val_set"]
-    tol_min = config["add_params"]["tol_min"]
+    tol_min, n_min = False, False
+    if "n_min" in config["add_params"]:
+        n_min = config["add_params"]["n_min"]
+    else:
+        tol_min = config["add_params"]["tol_min"]
 
-    Qr, func, index_r, lipschitz_consts = method.find_n(Vstar, Qstar, p1=p1, tol_min=tol_min,
+    Qr, func, index_r, lipschitz_consts = method.find_n(Vstar, Qstar, p1=p1, tol_min=tol_min, n_min=n_min,
                                                         train_set=train_set, Gamma=Gamma)
 
-    np.save(results_path + "/Qr.npy", Qr)
-    np.save(results_path + "/Vstar.npy", Vstar)
-    np.save(results_path + "/Qstar.npy", Qstar)
-    np.save(results_path + "/function.npy", func)
-    np.save(results_path + "/index_r.npy", index_r)
-
-    print("Qr shape = ", Qr.shape)
+    print("A_n shape = ", Qr.shape)
+    indices = np.arange(Vstar.shape[1])
     n = len(index_r)
     V = Vstar[:, index_r]
+
     Vbar = np.delete(Vstar, index_r, axis=1)
-    Qbar = method.coeff_approximation(Qr, func, index_r)
+    E = Encoder(index=np.array(index_r), basis=V, u_ref=sref)
+    D = Decoder(linear_index=np.array(index_r), nonlinear_index=np.delete(indices, index_r),
+                linear_basis=V, nonlinear_basis=Vbar, functions_f=func,
+                u_ref=sref)
+
+
+    Qbar = D.eval_all_coeffs(Qr)
     Qtest = Vstar.T @ (S_test - Sref_test)
     S_lin = Sref + Vstar[:, :n] @ Qstar[:n, :]
     S_lin_test = Sref_test + Vstar[:, :n] @ Qtest[:n, :]
@@ -67,17 +73,15 @@ def run():
     t2 = default_timer()
 
     Qr_test = V.T @ (S_test - Sref_test)
-    Qr_pred_test = Qr_test + tol
 
-    Qbar_test = method.coeff_approximation(Qr_test, func, index_r)
-    Qbar_online_test = method.coeff_approximation(Qr_pred_test, func, index_r)
-
+    Qbar_test = D.eval_all_coeffs(Qr_test)
     S_approx_test = Sref_test + V @ Qr_test + Vbar @ Qbar_test
-    S_approx_test_online = Sref_test + V @ Qr_pred_test + Vbar @ Qbar_online_test
 
-    np.save(results_path + "/Qbar_pred_test.npy", Qbar_test)
-    np.save(results_path + "/classical_POD_approach", S_lin_test)
-    np.save(results_path + "/our_test_approx.npy", S_approx_test)
+    with open(results_path + "/Encoder.pkl", "wb") as f:
+        pickle.dump(E, f)
+
+    with open(results_path + "/Decoder.pkl", "wb") as f:
+        pickle.dump(D, f)
 
     print("time = ", t2 - t1, " secs")
     print("Decoder lipschitz const = ", np.sqrt(1 + sum(np.array(lipschitz_consts) ** 2)))
@@ -85,7 +89,6 @@ def run():
     print("Linear reconstruction test error = ", relative_error(S_test, S_lin_test))
     print("Nonlinear reconstruction training error = ", relative_error(S, S_approx))
     print("Nonlinear reconstruction test error = ", relative_error(S_test, S_approx_test))
-    #print("Test reconstruction error online = ", relative_error(S_test, S_approx_test_online))
     tree_visualization(config)
 
     with open(Path(folder, "train_info.txt"), "w") as f:
@@ -107,7 +110,6 @@ def run():
         s += f"  * Linear reconstruction error test          = {relative_error(S_test, S_lin_test):}\n"
         s += f"  * Nonlinear reconstruction error training          = {relative_error(S, S_approx):}\n"
         s += f"  * Test reconstruction error          = {relative_error(S_test, S_approx_test):}\n"
-        s += f"  * Test reconstruction error online          = {relative_error(S_test, S_approx_test_online):}\n"
         s += f"  * Decoder lipschitz constant          = {np.sqrt(1 + sum(np.array(lipschitz_consts) ** 2)):}\n"
         f.write(s)
 
@@ -115,41 +117,29 @@ def run():
 def test():
     folder = Path(results_path)
     if folder.exists():
-        Vstar = np.load(results_path + "/Vstar.npy")
-        func = np.load(results_path + "/function.npy", allow_pickle=True).item()
-        index_r = np.load(results_path + "/index_r.npy")
 
-        n = len(index_r)
-        V = Vstar[:, index_r]
-        Qr = V.T @ (S - Sref)
-        Vbar = np.delete(Vstar, index_r, axis=1)
+        with open(results_path + "/Encoder.pkl", "rb") as f:
+            E = pickle.load(f)
 
-        Qbar = method.coeff_approximation(Qr, func, index_r)
-        Qstar = Vstar.T @ (S - Sref)
-        Qstar_test = Vstar.T @ (S_test - Sref_test)
-        S_lin = Sref + Vstar[:, :n] @ Qstar[:n, :]
-        S_lin_test = Sref_test + Vstar[:, :n] @ Qstar_test[:n, :]
-        S_approx = Sref + V @ Qr + Vbar @ Qbar
+        with open(results_path + "/Decoder.pkl", "rb") as f:
+            D = pickle.load(f)
 
-        Qr_test = V.T @ (S_test - Sref_test)
-        Qr_pred_test = Qr_test + tol
+        V = E.basis
+        Qr = E(S)
+        Qr_test = E(S_test)
 
-        Qbar_test = method.coeff_approximation(Qr_test, func, index_r)
-        Qbar_online_test = method.coeff_approximation(Qr_pred_test, func, index_r)
+        S_lin = Sref + V @ Qr
+        S_lin_test = Sref_test + V @ Qr_test
+        S_approx = D(Qr)
 
-        S_approx_test = Sref_test + V @ Qr_test + Vbar @ Qbar_test
-        S_approx_test_online = Sref_test + V @ Qr_pred_test + Vbar @ Qbar_online_test
+        S_approx_test = D(Qr_test)
 
         print("Linear reconstruction training error = ", relative_error(S, S_lin))
         print("Linear reconstruction training error = ", relative_error(S_test, S_lin_test))
         print("Nonlinear reconstruction training error = ", relative_error(S, S_approx))
         print("Nonlinear reconstruction test error = ", relative_error(S_test, S_approx_test))
-        #print("Test reconstruction error online = ", relative_error(S_test, S_approx_test_online))
     else:
         raise ValueError("Results have not been saved yet...Train the model first ! ")
-
-    np.save(results_path + "/Qbar_pred_test.npy", Qbar_test)
-    np.save(results_path + "/our_test_approx.npy", S_approx_test)
 
 
 def plot(config):
@@ -174,7 +164,7 @@ if __name__ == '__main__':
     results_path = config["path_results"]
     approx_type = config["params"]["approximation_type"]
 
-    S, S_test, Sref, Sref_test = myloader(config)
+    S, S_test, Sref, Sref_test, sref = myloader(config)
     if approx_type == "sparse":
         method = CPN_S(S, Sref, tol, alpha=alpha, beta=beta)
     elif approx_type == "low_rank":

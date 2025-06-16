@@ -20,16 +20,20 @@ class CPN_LR(utils):
         F, _ = SOLVER.solve()
         return F
 
-    def find_n(self, U, Q, p1, tol_min=1., train_set=1., Gamma=100):
+    def find_n(self, U, Q, p1, tol_min=1., n_min=False, train_set=1., Gamma=100):
         coeffs_dict = {}
         func = {}
         N_train = int(Q.shape[1] * train_set)
         for j, q_j in enumerate(Q):
             coeff_name = f"coef{j}"
             coeffs_dict[coeff_name] = {'value': q_j, 'index': j}
-        n = self.n_min(U, Q, float(tol_min))
+
+        if not n_min:
+            n = self.find_n_min(U, Q, float(tol_min))
+        else:
+            n = n_min
         print("n min     =   ", n)
-        index_r = list(np.arange(n))
+        index_r = [r for r in range(n)]
         for k in index_r:
             coeffs_dict.pop(f"coef{k}")
         indices_list = [value["index"] for value in coeffs_dict.values()]

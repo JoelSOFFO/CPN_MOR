@@ -73,5 +73,5 @@ def run(config):
     min_index = np.argmin(np.array(list_test_errors))
 
     print("Quadratic manifold training error =", list_train_errors[min_index])
-    print("Quadratic manifold test error =", list_train_errors[min_index])
+    print("Quadratic manifold test error =", list_test_errors[min_index])
     np.save(results_path + "/quadratic.npy", S_approx_list[:, :, min_index])

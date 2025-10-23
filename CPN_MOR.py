@@ -11,8 +11,11 @@ from visualization.tree_viz import tree_visualization
 from encoder_decoder import Encoder, Decoder
 import pickle
 
-def relative_error(S, S_approx):
-    return np.linalg.norm(S - S_approx, 'fro') / np.linalg.norm(S, 'fro')
+def relative_error(S, S_approx, setting="mean_squared"):
+    if setting == "mean_squared":
+        return np.linalg.norm(S - S_approx, 'fro') / np.linalg.norm(S, 'fro')
+    else:
+        return max(np.linalg.norm(S - S_approx, axis=0)) / max(np.linalg.norm(S, axis=0))
 
 def error_svd(singular_values):
     error = np.sqrt(np.flip(np.cumsum(np.flip(singular_values ** 2)) / (singular_values ** 2).sum()))
@@ -22,20 +25,25 @@ def error_svd(singular_values):
 def run():
     folder = Path(results_path)
     folder.mkdir(parents=True, exist_ok=True)
-    path_left_rob = config["path_svd"]
-    path_rob = Path(path_left_rob)
-    if path_rob.exists() and recompute_svd == False:
-        U = np.load(path_left_rob)
-    else:
-        print("Computing SVD...")
-        U, Sigma, _ = np.linalg.svd(S - Sref, full_matrices=False)
-        plt.semilogy(range(1, len(error_svd(Sigma))), error_svd(Sigma)[1:], marker='o')
-        plt.grid()
-        plt.savefig(results_path + "/singular_value_decay.png")
-    np.save(results_path + "/singular_vectors.npy", U)
-    print("SVD truncation...")
+    if setting == "mean_squared":
+        path_left_rob = config["path_svd"]
+        path_rob = Path(path_left_rob)
+        if path_rob.exists() and recompute_svd == False:
+            U = np.load(path_left_rob)
+        else:
+            print("Computing SVD...")
+            U, Sigma, _ = np.linalg.svd(S - Sref, full_matrices=False)
+            plt.semilogy(range(1, len(error_svd(Sigma))), error_svd(Sigma)[1:], marker='o')
+            plt.grid()
+            plt.savefig(results_path + "/singular_value_decay.png")
+        np.save(results_path + "/singular_vectors.npy", U)
+        print("SVD truncation...")
 
-    Vstar, Qstar = method.truncate_svd(U[:, ])
+        Vstar, Qstar = method.truncate_svd(U[:, ])
+    elif setting == "worst_case":
+        Vstar, Qstar, _, _ = method.weak_greedy_snapshots(gamma=0.99, verbose=True)
+    else:
+        raise ValueError("Invalid setting value")
 
     print("V_N shape= ", Vstar.shape)
     print("A_N shape= ", Qstar.shape)
@@ -84,11 +92,20 @@ def run():
         pickle.dump(D, f)
 
     print("time = ", t2 - t1, " secs")
+
     print("Decoder lipschitz const = ", np.sqrt(1 + sum(np.array(lipschitz_consts) ** 2)))
-    print("Linear reconstruction training error = ", relative_error(S, S_lin))
-    print("Linear reconstruction test error = ", relative_error(S_test, S_lin_test))
-    print("Nonlinear reconstruction training error = ", relative_error(S, S_approx))
-    print("Nonlinear reconstruction test error = ", relative_error(S_test, S_approx_test))
+    if setting == "worst_case":
+        print("# ----------------- WORST-CASE SETTING ----------------- #")
+        print("Linear reconstruction training error = ", relative_error(S, S_lin, setting="worst_case"))
+        print("Linear reconstruction test error = ", relative_error(S_test, S_lin_test, setting="worst_case"))
+        print("Nonlinear reconstruction training error = ", relative_error(S, S_approx, setting="worst_case"))
+        print("Nonlinear reconstruction test error = ", relative_error(S_test, S_approx_test, setting="worst_case"))
+
+    print("# ----------------- MEAN-SQUARED SETTING ----------------- #")
+    print("Linear reconstruction training error = ", relative_error(S, S_lin, setting="mean_squared"))
+    print("Linear reconstruction test error = ", relative_error(S_test, S_lin_test, setting="mean_squared"))
+    print("Nonlinear reconstruction training error = ", relative_error(S, S_approx, setting="mean_squared"))
+    print("Nonlinear reconstruction test error = ", relative_error(S_test, S_approx_test, setting="mean_squared"))
     tree_visualization(config)
 
     with open(Path(folder, "train_info.txt"), "w") as f:
@@ -106,10 +123,17 @@ def run():
         s += f"  * Time          = {t2 - t1:_}\n"
         s += f"  * n          = {len(index_r):_}\n"
         s += f"  * I          = {str(index_r)}\n"
-        s += f"  * Linear reconstruction error training          = {relative_error(S, S_lin):}\n"
-        s += f"  * Linear reconstruction error test          = {relative_error(S_test, S_lin_test):}\n"
-        s += f"  * Nonlinear reconstruction error training          = {relative_error(S, S_approx):}\n"
-        s += f"  * Test reconstruction error          = {relative_error(S_test, S_approx_test):}\n"
+        if setting == "worst_case":
+            s += f"# ----------------- WORST-CASE SETTING ----------------- #\n"
+            s += f"  * Linear reconstruction error training          = {relative_error(S, S_lin, setting="worst_case"):}\n"
+            s += f"  * Linear reconstruction error test          = {relative_error(S_test, S_lin_test, setting="worst_case"):}\n"
+            s += f"  * Nonlinear reconstruction error training          = {relative_error(S, S_approx, setting="worst_case"):}\n"
+            s += f"  * Test reconstruction error          = {relative_error(S_test, S_approx_test, setting="worst_case"):}\n"
+        s += f"# ----------------- MEAN-SQUARED SETTING ----------------- #\n"
+        s += f"  * Linear reconstruction error training          = {relative_error(S, S_lin, setting="mean_squared"):}\n"
+        s += f"  * Linear reconstruction error test          = {relative_error(S_test, S_lin_test, setting="mean_squared"):}\n"
+        s += f"  * Nonlinear reconstruction error training          = {relative_error(S, S_approx, setting="mean_squared"):}\n"
+        s += f"  * Test reconstruction error          = {relative_error(S_test, S_approx_test, setting="mean_squared"):}\n"
         s += f"  * Decoder lipschitz constant          = {np.sqrt(1 + sum(np.array(lipschitz_consts) ** 2)):}\n"
         f.write(s)
 
@@ -134,10 +158,18 @@ def test():
 
         S_approx_test = D(Qr_test)
 
-        print("Linear reconstruction training error = ", relative_error(S, S_lin))
-        print("Linear reconstruction training error = ", relative_error(S_test, S_lin_test))
-        print("Nonlinear reconstruction training error = ", relative_error(S, S_approx))
-        print("Nonlinear reconstruction test error = ", relative_error(S_test, S_approx_test))
+        if setting == "worst_case":
+            print("# ----------------- WORST-CASE SETTING ----------------- #")
+            print("Linear reconstruction training error = ", relative_error(S, S_lin, setting="worst_case"))
+            print("Linear reconstruction test error = ", relative_error(S_test, S_lin_test, setting="worst_case"))
+            print("Nonlinear reconstruction training error = ", relative_error(S, S_approx, setting="worst_case"))
+            print("Nonlinear reconstruction test error = ", relative_error(S_test, S_approx_test, setting="worst_case"))
+
+        print("# ----------------- MEAN-SQUARED SETTING ----------------- #")
+        print("Linear reconstruction training error = ", relative_error(S, S_lin, setting="mean_squared"))
+        print("Linear reconstruction training error = ", relative_error(S_test, S_lin_test, setting="mean_squared"))
+        print("Nonlinear reconstruction training error = ", relative_error(S, S_approx, setting="mean_squared"))
+        print("Nonlinear reconstruction test error = ", relative_error(S_test, S_approx_test, setting="mean_squared"))
     else:
         raise ValueError("Results have not been saved yet...Train the model first ! ")
 
@@ -163,12 +195,14 @@ if __name__ == '__main__':
     recompute_svd = config["add_params"]["compute_svd"]
     results_path = config["path_results"]
     approx_type = config["params"]["approximation_type"]
+    setting = config["setting"]
 
-    S, S_test, Sref, Sref_test, sref = myloader(config)
+    S, S_test, Sref, Sref_test = myloader(config)
+    sref = Sref[:, 0]
     if approx_type == "sparse":
-        method = CPN_S(S, Sref, tol, alpha=alpha, beta=beta)
+        method = CPN_S(S, Sref, tol, alpha=alpha, beta=beta, setting=setting)
     elif approx_type == "low_rank":
-        method = CPN_LR(S, Sref, tol, alpha=alpha, beta=beta)
+        method = CPN_LR(S, Sref, tol, alpha=alpha, beta=beta, setting=setting)
     else:
         raise ValueError("Approximation type not implemented !")
 

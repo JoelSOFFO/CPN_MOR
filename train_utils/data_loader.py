@@ -45,4 +45,4 @@ def myloader(config):
     print("Training data shape  =  ", S.shape)
     print("Test data shape   =  ", S_test.shape)
 
-    return S, S_test, Sref, Sref_test, sref
+    return S, S_test, Sref, Sref_test

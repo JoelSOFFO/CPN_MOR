@@ -1,15 +1,19 @@
 import numpy as np
 
-def l2_error(true, pred):
-    return np.linalg.norm(true - pred, ord=2)
+def lp_error(true, pred, setting="mean_squared"):
+    if setting == "mean_squared":
+        return np.linalg.norm(true - pred, ord=2)
+    else:
+        return max(abs(true - pred))
 
 class utils(object):
-    def __init__(self, S, Sref, tol_eps=1e-3, alpha=1., beta=1 / np.sqrt(2), **config):
+    def __init__(self, S, Sref, tol_eps=1e-3, alpha=1., beta=1 / np.sqrt(2), setting="mean_squared", **config):
         self.tol_eps = float(tol_eps)
         self.S = S
         self.Sref = Sref
         self.alpha = alpha
         self.beta = beta
+        self.setting = setting
         self.config = config
         assert self.tol_eps < 1
 
@@ -36,6 +40,67 @@ class utils(object):
             Q_norm += np.linalg.norm(Q[r, :], ord=2) ** 2
         return U[:, :r + 1], Q[:r + 1, :]
 
+    def weak_greedy_snapshots(self, gamma=0.99, verbose=True):
+        """
+        Snapshot-only weak greedy basis selection.
+        """
+
+        D, m = self.S.shape
+        self.e_infty_0 = max(np.linalg.norm(self.S, axis=0))
+        tol_greedy = self.beta * self.tol_eps * self.e_infty_0
+        S_centered = self.S - self.Sref
+
+        # store basis vectors here
+        V = np.zeros((D, 0))
+        selected = []
+        residuals = []
+
+        # Orthonormal projection function
+        def project(v, V):
+            if V.shape[1] == 0:
+                return np.zeros_like(v)
+            return V @ (V.T @ v)
+
+        # Main loop
+        for k in range(m):
+
+            # Compute projection errors for all snapshots
+            errors = np.zeros(m)
+            for j in range(m):
+                if j in selected:
+                    errors[j] = -np.inf  # don't pick already-selected
+                    continue
+                r = S_centered[:, j] - project(S_centered[:, j], V)
+                errors[j] = np.linalg.norm(r)
+
+            # Get maximum projection error
+            max_err = np.max(errors)
+            residuals.append(max_err)
+
+            if verbose:
+                print(f"Iter {k}, max residual {max_err:.3e}")
+
+            # stopping criterion
+            if max_err < tol_greedy:
+                if verbose:
+                    print("Tolerance reached — stopping.")
+                break
+
+            # weak greedy: choose any j s.t. err ≥ γ * max_err
+            candidates = np.where(errors >= gamma * max_err)[0]
+            j_star = candidates[0]  # take the first satisfying weak condition
+
+            selected.append(j_star)
+
+            # residual vector to be added (Gram–Schmidt)
+            v = S_centered[:, j_star] - project(S_centered[:, j_star], V)
+            v = v / np.linalg.norm(v)
+
+            # enlarge basis
+            V = np.hstack((V, v.reshape(-1, 1)))
+        Q = V.T @ (self.S - self.Sref)
+        return V, Q, selected, residuals
+
     def weights(self, index, indices_list, learnt_weights):
         X = 1 - np.sum(learnt_weights)
         w = (index ** (self.alpha) / np.sum(np.array(indices_list) ** (self.alpha))) * X
@@ -43,9 +108,12 @@ class utils(object):
 
     def tol_eps_wise(self, index, indices_list, learnt_weights):
 
-        return (self.tol_eps * np.sqrt(self.weights(index, indices_list,
+        if self.setting == "mean_squared":
+            return (self.tol_eps * np.sqrt(self.weights(index, indices_list,
                                                     learnt_weights)) * np.linalg.norm(self.S, 'fro')) * np.sqrt(
             1 - self.beta ** 2)
+        else:
+            return self.weights(index, indices_list, learnt_weights) * (1 - self.beta) * self.tol_eps * self.e_infty_0
 
     @staticmethod
     def norm_i(b, index_n, gamma_list):

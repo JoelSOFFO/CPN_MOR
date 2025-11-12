@@ -1,3 +1,4 @@
+.idea
 __pycache__*
 %
 train_utils/__pycache__

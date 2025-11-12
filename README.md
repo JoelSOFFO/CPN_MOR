@@ -12,8 +12,16 @@ To use the code :
   cd CPN_MOR
   ```
   
-- Install the package tensap, see https://github.com/anthony-nouy/tensap
-
+  - Install the package tensap, see https://github.com/anthony-nouy/tensap
+      
+    We recommend to manually install it to avoid potential errors due to updates.
+  
+      ```
+    git clone https://github.com/anthony-nouy/tensap.git
+    cd tensap
+    pip install -e .
+    ```
+  
 - Install the required libraries
 
   ```

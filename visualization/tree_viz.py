@@ -8,7 +8,7 @@ import sys
 sys.path.append("visualization")
 from utils import *
 
-plt.rc('text', usetex=True)
+plt.rc('text', usetex=False)
 plt.rc('font', family='serif')
 def tree_visualization(config):
 

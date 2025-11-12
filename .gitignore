@@ -1,0 +1,9 @@
+__pycache__*
+%
+train_utils/__pycache__
+sota/__pycache__
+visualization/__pycache__
+sota/.DS_Store
+sota/Results
+.DS_Store
+Results/

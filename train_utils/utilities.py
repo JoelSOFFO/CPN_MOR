@@ -7,7 +7,7 @@ def lp_error(true, pred, setting="mean_squared"):
         return max(abs(true - pred))
 
 class utils(object):
-    def __init__(self, S, Sref, tol_eps=1e-3, alpha=1., beta=1 / np.sqrt(2), setting="mean_squared", **config):
+    def __init__(self, S, Sref, tol_eps, alpha=1., beta=1 / np.sqrt(2), setting="mean_squared", **config):
         self.tol_eps = float(tol_eps)
         self.S = S
         self.Sref = Sref
@@ -40,9 +40,9 @@ class utils(object):
             Q_norm += np.linalg.norm(Q[r, :], ord=2) ** 2
         return U[:, :r + 1], Q[:r + 1, :]
 
-    def weak_greedy_snapshots(self, gamma=0.99, verbose=True):
+    def greedy_snapshots(self, verbose=True):
         """
-        Snapshot-only weak greedy basis selection.
+        Snapshot-only greedy basis selection.
         """
 
         D, m = self.S.shape
@@ -55,20 +55,18 @@ class utils(object):
         selected = []
         residuals = []
 
-        # Orthonormal projection function
         def project(v, V):
             if V.shape[1] == 0:
                 return np.zeros_like(v)
             return V @ (V.T @ v)
 
-        # Main loop
         for k in range(m):
 
             # Compute projection errors for all snapshots
             errors = np.zeros(m)
             for j in range(m):
                 if j in selected:
-                    errors[j] = -np.inf  # don't pick already-selected
+                    errors[j] = -np.inf
                     continue
                 r = S_centered[:, j] - project(S_centered[:, j], V)
                 errors[j] = np.linalg.norm(r)
@@ -86,9 +84,9 @@ class utils(object):
                     print("Tolerance reached — stopping.")
                 break
 
-            # weak greedy: choose any j s.t. err ≥ γ * max_err
-            candidates = np.where(errors >= gamma * max_err)[0]
-            j_star = candidates[0]  # take the first satisfying weak condition
+            candidates = np.where(errors >= max_err)[0]
+            assert len(candidates) == 1
+            j_star = candidates[0]
 
             selected.append(j_star)
 
@@ -96,7 +94,6 @@ class utils(object):
             v = S_centered[:, j_star] - project(S_centered[:, j_star], V)
             v = v / np.linalg.norm(v)
 
-            # enlarge basis
             V = np.hstack((V, v.reshape(-1, 1)))
         Q = V.T @ (self.S - self.Sref)
         return V, Q, selected, residuals

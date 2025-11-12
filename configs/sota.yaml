@@ -1,8 +1,8 @@
 data:
   train_data_path: "Toy_data/data.npy" # npy file containing a numpy array of shape (D, mtrain)
   test_data_path:  "Toy_data/data.npy" # npy file containing a numpy array of shape (D, mtest)
-  ntrain: 1000 # to select the first ntrain colums in the array (D, mtrain) (ntrain<=mtrain)
-  ntest: 100 # to select the first ntest colums in the array (D, mtest) (ntest<=mtest)
+  ntrain: -1 # to select the first ntrain colums in the array (D, mtrain) (ntrain<=mtrain)
+  ntest: -1 # to select the first ntest colums in the array (D, mtest) (ntest<=mtest)
 
 params:
   method : "quadratic" # linear, quadratic, additive_am, sparse or low_rank

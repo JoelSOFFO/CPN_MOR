@@ -76,7 +76,7 @@ def run(config):
     SOLVER.rank_adaptation_options["early_stopping"] = True
     SOLVER.rank_adaptation_options["early_stopping_factor"] = 10
 
-    SOLVER.tree_adaptation = True
+    SOLVER.tree_adaptation = False
     SOLVER.tree_adaptation_options["max_iterations"] = 1e2
 
     SOLVER.alternating_minimization_parameters["stagnation"] = 1e-10

@@ -43,7 +43,7 @@ def run():
 
         Vstar, Qstar = method.truncate_svd(U[:, ])
     elif setting == "worst_case":
-        Vstar, Qstar, _, _ = method.weak_greedy_snapshots(gamma=0.99, verbose=True)
+        Vstar, Qstar, _, _ = method.greedy_snapshots(verbose=True)
     else:
         raise ValueError("Invalid setting value")
 
@@ -201,9 +201,9 @@ if __name__ == '__main__':
     S, S_test, Sref, Sref_test = myloader(config)
     sref = Sref[:, 0]
     if approx_type == "sparse":
-        method = CPN_S(S=S, Sref=Sref, tol=tol, alpha=alpha, beta=beta, setting=setting)
+        method = CPN_S(S=S, Sref=Sref, tol_eps=tol, alpha=alpha, beta=beta, setting=setting)
     elif approx_type == "low_rank":
-        method = CPN_LR(S=S, Sref=Sref, tol=tol, alpha=alpha, beta=beta, setting=setting)
+        method = CPN_LR(S=S, Sref=Sref, tol_eps=tol, alpha=alpha, beta=beta, setting=setting)
     else:
         raise ValueError("Approximation type not implemented !")
 

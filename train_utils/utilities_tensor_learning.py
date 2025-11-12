@@ -113,7 +113,7 @@ class CPN_LR(utils):
                 lip_const_i = self.lip_norm_i(Q_check, pred[:, j], index_r,
                                               np.array(lip_consts_inputs))
 
-                if l2_error(coeffs[:, j], pred[:, j]) <= self.tol_eps_wise(i, indices_list,
+                if lp_error(coeffs[:, j], pred[:, j]) <= self.tol_eps_wise(i, indices_list,
                                                                            learnt_weights) and lip_const_i <= g_i:  # and lip_const_i <= g_i
                     func[coeff_name] = {'function': f[j], 'index': i, 'nb_deps': len(Q_check),
                                         'lip_constant': lip_const_i}

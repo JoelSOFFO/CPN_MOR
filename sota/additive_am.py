@@ -99,7 +99,7 @@ def run(config):
     Gamma_MPOD_test = Sref_test + (V @ An_test) + (Vbar @ Xi @ Poly_test)
 
     print(f"\n POD based Reconstruction test error =  {relative_error(S_test, Gamma_MPOD_test):}")
-    np.save(results_path + "/additive.npy", Gamma_MPOD_test)
+    np.save(results_path + "/test_additive_approx_without_AM.npy", Gamma_MPOD_test)
 
     ################################################################
     #  AM based learning
@@ -144,4 +144,4 @@ def run(config):
     Gamma_MAM_test = Sref_test + (V @ a_test) + (Vbar @ Xi @ Poly_test)
     print(f"\n AM based Reconstruction test error =  {relative_error(S_test, Gamma_MAM_test):}")
 
-    np.save(results_path + "/additive_am.npy", Gamma_MAM_test)
+    np.save(results_path + "/test_additive_AM.npy", Gamma_MAM_test)

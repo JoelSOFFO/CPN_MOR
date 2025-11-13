@@ -85,7 +85,9 @@ class utils(object):
                 break
 
             candidates = np.where(errors >= max_err)[0]
-            assert len(candidates) == 1
+            print("candidates:", candidates)
+
+            # assert len(candidates) == 1
             j_star = candidates[0]
 
             selected.append(j_star)

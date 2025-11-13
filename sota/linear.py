@@ -32,7 +32,7 @@ def run(config):
         U = np.load(path_svd)
     else:
         U, _, _ = np.linalg.svd(S - Sref, full_matrices=False)
-        np.save(results_path + "/left_rob.npy", U)
+        np.save(results_path + "/basis_vectors.npy", U)
     V = U[:, :n]
     An = V.T @ (S - Sref)
     An_test = V.T @ (S_test - Sref_test)
@@ -42,5 +42,5 @@ def run(config):
     print("Linear manifold training error = ", relative_error(S, S_approx))
     print("Linear manifold test error = ", relative_error(S_test, S_approx_test))
 
-    np.save(results_path + "/linear.npy", S_approx_test)
+    np.save(results_path + "/test_linear_approx.npy", S_approx_test)
 

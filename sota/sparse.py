@@ -84,4 +84,4 @@ def run(config):
     print(f"\n Sparse test error =  {relative_error(S_test, S_approx_test):}")
 
     np.save(results_path + "/coeffs_sparse.npy", Abar_approx_test)
-    np.save(results_path + "/sparse.npy", S_approx_test)
+    np.save(results_path + "/test_sparse_approx.npy", S_approx_test)

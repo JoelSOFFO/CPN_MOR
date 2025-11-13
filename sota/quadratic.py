@@ -49,7 +49,7 @@ def run(config):
         U = np.load(path_svd)
     else:
         U, ss, _ = np.linalg.svd(S_centered, full_matrices=False)
-        np.save(results_path + "/left_rob.npy", U)
+        np.save(results_path + "/basis_vectors.npy", U)
     V = U[:, :n]
     An = V.T @ S_centered
 
@@ -74,4 +74,4 @@ def run(config):
 
     print("Quadratic manifold training error =", list_train_errors[min_index])
     print("Quadratic manifold test error =", list_test_errors[min_index])
-    np.save(results_path + "/quadratic.npy", S_approx_list[:, :, min_index])
+    np.save(results_path + "/test_quadratic_approx.npy", S_approx_list[:, :, min_index])

@@ -39,7 +39,7 @@ def run(config):
         U = np.load(path_svd)
     else:
         U, _, _ = np.linalg.svd(S - Sref, full_matrices=False)
-        np.save(results_path + "/left_rob.npy", U)
+        np.save(results_path + "/basis_vectors.npy", U)
     Vn = U[:, :n]
     Vbar = U[:, n:N]
     print("Vn shape    = ", Vn.shape)
@@ -105,8 +105,8 @@ def run(config):
     S_approx_test = Sref_test + Vn @ An_test + Vbar @ Abar_approx_test
 
     print(f"\n Tensor learning test error =  {relative_error(S_test, S_approx_test):}")
-    np.save(results_path + "/coeffs_low_rank.npy", Abar_approx_test)
-    np.save(results_path + "/low_rank.npy", S_approx_test)
+    np.save(results_path + "/coeffs_low_rank_approx.npy", Abar_approx_test)
+    np.save(results_path + "/test_low_rank_approx.npy", S_approx_test)
 
     t2 = default_timer()
     print("time   =  ", t2 - t1)

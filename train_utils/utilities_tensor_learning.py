@@ -1,6 +1,7 @@
 import tensap
 from joblib import Parallel, delayed
-
+import contextlib
+import io
 import sys
 
 sys.path.append("train_utils")
@@ -17,7 +18,9 @@ class CPN_LR(utils):
         SOLVER.training_data = [None, output_data[:ntrain]]
         SOLVER.test_data = [input_data, output_data]
 
-        F, _ = SOLVER.solve()
+        st = io.StringIO()
+        with contextlib.redirect_stdout(st), contextlib.redirect_stderr(st):
+            F, _ = SOLVER.solve()
         return F
 
     def find_n(self, U, Q, p1, tol_min=1., n_min=False, train_set=1., Gamma=100):
@@ -64,7 +67,7 @@ class CPN_LR(utils):
             SOLVER.bases = BASES
             SOLVER.bases_eval = BASES.eval(Q_check.T[:N_train, :])
 
-            SOLVER.tolerance["on_stagnation"] = 1e-6
+            SOLVER.tolerance["on_stagnation"] = 1e-4
 
             SOLVER.initialization_type = "canonical"
 
@@ -89,7 +92,7 @@ class CPN_LR(utils):
             SOLVER.tree_adaptation_options["max_iterations"] = 1e2
             # SOLVER.tree_adaptation_options['force_rank_adaptation'] = True
 
-            SOLVER.alternating_minimization_parameters["stagnation"] = 1e-10
+            SOLVER.alternating_minimization_parameters["stagnation"] = 1e-5
             SOLVER.alternating_minimization_parameters["max_iterations"] = 50
 
             SOLVER.display = False
@@ -97,6 +100,8 @@ class CPN_LR(utils):
 
             SOLVER.model_selection = True
             SOLVER.model_selection_options["type"] = "test_error"
+
+            # SOLVER.loss_function.error_type = "absolute"
 
             coeffs = Q[indices_list, :].T
             SOLVER.tolerance["on_error"] = self.tol_eps * 0.1

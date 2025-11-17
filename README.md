@@ -50,6 +50,8 @@ To use the code :
 
   - The parameters related to these methods can be changed in the config file sota.yaml.
 
+The datasets used can be found here : https://drive.google.com/drive/folders/1LdhMTs0U1fMQrGGr5kj7LDj8qJteujYb?usp=drive_link
+
 If you make use of this code in a paper, please cite [1]
 
 ```

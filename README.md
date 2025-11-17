@@ -9,15 +9,16 @@ To use the code :
 
   ```
   git clone https://github.com/JoelSOFFO/CPN_MOR.git
-  cd CPN_MOR
   ```
   
   - Install the package tensap, see https://github.com/anthony-nouy/tensap
       
+  ```
+  pip install tensap
+  ```
    To avoid potential errors due to updates, you can install tensap manually
   
   ```
-    cd ..
     git clone https://github.com/anthony-nouy/tensap.git
     cd tensap
     pip install -e .
@@ -32,6 +33,10 @@ To use the code :
   
 - Data format: data is given as a numpy array of shape (D, m), whoses columns represent m samples in R^D.
     It is given in a npy file whose path is given in config files (cpn.yaml and sota.yaml).
+
+  ```
+  cd CPN_MOR
+  ```
   
 - To run CPN, use the command line
 

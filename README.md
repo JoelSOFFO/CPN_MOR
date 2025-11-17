@@ -16,7 +16,7 @@ To use the code :
       
    To avoid potential errors due to updates, you can install tensap manually
   
-      ```
+  ```
     git clone https://github.com/anthony-nouy/tensap.git
     cd tensap
     pip install -e .

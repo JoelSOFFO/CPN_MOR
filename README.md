@@ -14,7 +14,7 @@ To use the code :
   
   - Install the package tensap, see https://github.com/anthony-nouy/tensap
       
-    We recommend to manually install it to avoid potential errors due to updates.
+   To avoid potential errors due to updates, you can install tensap manually
   
       ```
     git clone https://github.com/anthony-nouy/tensap.git
